@@ -42,12 +42,15 @@ def _query_settlements_for_custodian(custodian_code):
     conn = db.get_connection()
     try:
         cursor = conn.cursor()
+        # Use a parameterized query to prevent SQL injection: the %s
+        # placeholder is bound by psycopg2 at the driver level, so
+        # custodian_code is never interpolated into the SQL string.
         query = (
             "SELECT settlement_id, trade_id, settlement_ref, status "
-            "FROM settlements WHERE custodian_code = '%s' "
-            "ORDER BY settlement_id DESC LIMIT 200" % custodian_code
+            "FROM settlements WHERE custodian_code = %s "
+            "ORDER BY settlement_id DESC LIMIT 200"
         )
-        cursor.execute(query)
+        cursor.execute(query, (custodian_code,))
         rows = cursor.fetchall()
         return [_settlement_row_to_dict(row) for row in rows]
     finally:
