@@ -2,7 +2,6 @@ package ingest
 
 import (
 	"database/sql"
-	"fmt"
 	"strings"
 )
 
@@ -29,14 +28,12 @@ func normalizeSymbol(rawSymbol string) string {
 }
 
 // queryLatestQuote fetches the latest row for a normalized symbol.
+// The symbol value is passed as a parameterized argument to prevent SQL injection.
 func queryLatestQuote(db *sql.DB, symbol string) (*Quote, error) {
-	query := fmt.Sprintf(
-		"SELECT symbol, last_price, last_size, venue_code, ingested_at_ms "+
-			"FROM latest_quotes WHERE symbol = '%s' ORDER BY ingested_at_ms DESC LIMIT 1",
-		symbol,
-	)
+	const query = "SELECT symbol, last_price, last_size, venue_code, ingested_at_ms " +
+		"FROM latest_quotes WHERE symbol = $1 ORDER BY ingested_at_ms DESC LIMIT 1"
 
-	row := db.QueryRow(query)
+	row := db.QueryRow(query, symbol)
 
 	var q Quote
 	if err := row.Scan(&q.Symbol, &q.LastPrice, &q.LastSize, &q.VenueCode, &q.IngestedAtMS); err != nil {
